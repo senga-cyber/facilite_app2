@@ -1,0 +1,70 @@
+### 1. Créer un utilisateur
+POST http://127.0.0.1:8000/users/
+Content-Type: application/json
+
+{
+  "username": "client1", 
+  "email": "client@example.com",
+  "password": "123456"
+}
+### 1.1. Faire un paiement (⚠️ remplacer <token> par celui du login)
+POST http://127.0.0.1:8000/payments/
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "order_id": 1,
+  "amount": 50.0,
+  "payment_method": "mobile_money"
+}
+
+### 2. Login utilisateur (obtenir le token JWT)
+POST http://127.0.0.1:8000/users/login
+Content-Type: application/json
+
+{
+  "email": "client@example.com",
+  "password": "123456"
+}
+
+### 3. Créer un restaurant
+POST http://127.0.0.1:8000/restaurants/
+Content-Type: application/json
+
+{
+  "name": "Chez Lumière",
+  "address": "Boulevard du 30 Juin",
+  "phone": "+243900000000"
+}
+
+### 4. Ajouter un menu au restaurant
+POST http://127.0.0.1:8000/restaurants/1/menus
+Content-Type: application/json
+
+{
+  "name": "Pizza Margherita",
+  "description": "Pizza avec tomates et fromage",
+  "price": 15.5
+}
+
+### 5. Passer une commande (⚠️ remplacer TOKEN par celui du login)
+POST http://127.0.0.1:8000/orders/
+Authorization: Bearer TOKEN
+Content-Type: application/json
+
+{
+  "restaurant_id": 1,
+  "items": [
+    {
+      "menu_id": 1,
+      "quantity": 2
+    }
+  ]
+}
+
+### 6. Voir mes commandes (JWT requis)
+GET http://127.0.0.1:8000/orders/me
+Authorization: Bearer TOKEN
+
+### 7. Voir toutes les commandes (admin ou test)
+GET http://127.0.0.1:8000/orders/

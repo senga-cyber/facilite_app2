@@ -1,0 +1,66 @@
+
+/* index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "leaflet/dist/leaflet.css";
+/* 🎨 Palette personnalisée */
+:root {
+  --color-gold: #d4af37;
+  --color-nightblue: #0d1b2a;
+  --color-black: #000000;
+  --color-white: #ffffff;
+}
+
+/* 🌍 Styles globaux */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-nightblue);
+  color: var(--color-white);
+  margin: 0;
+  padding: 0;
+}
+
+/* 🖼️ Logo */
+.logo-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0d1b2a;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+
+}
+  .logo{
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0d1b2a;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+/* 🔘 Boutons */
+.btn {
+  @apply px-4 py-2 rounded-lg font-semibold transition;
+}
+
+.btn-primary {
+  background-color: var(--color-gold);
+  color: var(--color-black);
+}
+
+.btn-primary:hover {
+  background-color: #b58d2a; /* doré foncé */
+}
+
+/* Champs du formulaire */
+input, select {
+  @apply w-full p-2 rounded-md border border-gray-300 text-black;
+}

@@ -1,0 +1,50 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+# Framework principal
+fastapi
+
+# Serveur ASGI pour exécuter FastAPI
+uvicorn[standard]
+
+# ORM pour gérer la base PostgreSQL
+sqlalchemy
+
+# Driver PostgreSQL
+psycopg2-binary
+
+# Gestion des variables d'environnement (.env)
+python-dotenv
+
+# Sécurité et authentification (JWT)
+passlib[bcrypt]
+python-jose[cryptography]
+
+# Validation des données
+pydantic
+
+# Outils utiles
+alembic       # Migration de la base de données
+email-validator  # Vérification des emails
+# --- Framework principal ---
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# --- Base de données ---
+SQLAlchemy==2.0.31
+psycopg2-binary==2.9.9
+
+# --- Authentification & Sécurité ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# --- QR Code ---
+qrcode[pil]==7.4.2
+pillow==10.3.0
+
+# --- Autres utilitaires ---
+python-multipart==0.0.9   # pour upload de fichiers si besoin
+pydantic==2.8.2
+pydantic-settings==2.3.3

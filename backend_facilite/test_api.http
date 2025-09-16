@@ -1,0 +1,37 @@
+### Tester la racine
+GET http://127.0.0.1:8000/
+
+### Créer un utilisateur
+POST http://127.0.0.1:8000/users/
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Lister les utilisateurs
+GET http://127.0.0.1:8000/users/
+
+### Créer un hôtel
+POST http://127.0.0.1:8000/hotels/
+Content-Type: application/json
+
+{
+  "name": "Hotel Lumière",
+  "location": "Kinshasa",
+  "price": 150
+}
+
+### Lister les hôtels
+GET http://127.0.0.1:8000/hotels/
+
+### Faire une réservation (JWT requis)
+POST http://127.0.0.1:8000/reservations/
+Content-Type: application/json
+Authorization: Bearer TON_JWT_ICI
+
+{
+  "hotel_id": 1,
+  "nights": 3
+}
