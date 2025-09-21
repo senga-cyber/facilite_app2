@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
-from database import get_db  # ✅ Import propre depuis database.py
-from models import User       # Assure-toi que models.py n'importe pas config.py
+from backend_facilite.database import get_db # ✅ Import propre depuis database.py
+from backend_facilite.models import User       # Assure-toi que models.py n'importe pas config.py
 
 # -------------------- Configuration Authentification --------------------
 SECRET_KEY = "charsie2"  # 🔐 À remplacer par une clé plus forte en production

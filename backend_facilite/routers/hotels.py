@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from config import get_db, get_current_user
-from models import Hotel, User, Room, Reservation
-from schemas import (
+from backend_facilite.config import get_db
+from backend_facilite.auth import get_current_user
+from backend_facilite.models import Hotel, User, Room, Reservation
+from backend_facilite.schemas import (
     HotelCreate, HotelUpdate, HotelResponse,
     RoomCreate, RoomReponse ,
     ReservationCreate, ReservationOut

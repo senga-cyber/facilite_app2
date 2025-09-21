@@ -1,9 +1,10 @@
 # backend_facilite/routers/orders.py 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from config import get_db, get_current_user
-from models import Order, OrderItem, Menu, Restaurant
-from schemas import OrderCreate, OrderResponse
+from backend_facilite.config import get_db
+from backend_facilite.auth import get_current_user
+from backend_facilite.models import Order, OrderItem, Menu, Restaurant
+from backend_facilite.schemas import OrderCreate, OrderResponse
 from typing import List
 import math
 

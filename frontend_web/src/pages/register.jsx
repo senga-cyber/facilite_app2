@@ -1,3 +1,4 @@
+// frontend_web/src/pages/register.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
@@ -26,9 +27,22 @@ function Register() {
         throw new Error("Échec de l’inscription");
       }
 
-      alert("Inscription réussie ! Vous pouvez vous connecter.");
-      navigate("/login");
+      const data = await response.json();
+      console.log("Register response:", data); // 👈 debug
+
+      // ✅ Sauvegarde du token & user
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("role", data.user.role);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirection selon rôle
+      if (data.user.role === "admin") navigate("/dashboard/admin");
+      else if (data.user.role === "hotel_manager") navigate("/dashboard/hotel");
+      else if (data.user.role === "restaurant_manager") navigate("/dashboard/restaurant");
+      else navigate("/dashboard/client");
+
     } catch (error) {
+      console.error("Register error:", error);
       alert(error.message);
     }
   };
@@ -55,6 +69,7 @@ function Register() {
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#FFD700] focus:outline-none"
               placeholder="Ex: Chadrack nsenga"
+              required
             />
           </div>
 
@@ -68,6 +83,7 @@ function Register() {
               onChange={(e) => setPhone(e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#FFD700] focus:outline-none"
               placeholder="0999887766"
+              required
             />
           </div>
 
@@ -81,6 +97,7 @@ function Register() {
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#FFD700] focus:outline-none"
               placeholder="••••••••"
+              required
             />
           </div>
 

@@ -1,50 +1,38 @@
-fastapi
-uvicorn
-sqlalchemy
-psycopg2-binary
-python-dotenv
 # Framework principal
-fastapi
-
-# Serveur ASGI pour exécuter FastAPI
-uvicorn[standard]
-
-# ORM pour gérer la base PostgreSQL
-sqlalchemy
-
-# Driver PostgreSQL
-psycopg2-binary
-
-# Gestion des variables d'environnement (.env)
-python-dotenv
-
-# Sécurité et authentification (JWT)
-passlib[bcrypt]
-python-jose[cryptography]
-
-# Validation des données
-pydantic
-
-# Outils utiles
-alembic       # Migration de la base de données
-email-validator  # Vérification des emails
-# --- Framework principal ---
 fastapi==0.111.0
-uvicorn[standard]==0.30.1
+uvicorn[standard]==0.30.0
 
-# --- Base de données ---
+# Base de données & ORM
 SQLAlchemy==2.0.31
+alembic==1.13.2
 psycopg2-binary==2.9.9
 
-# --- Authentification & Sécurité ---
+# Sécurité & Authentification
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 
-# --- QR Code ---
-qrcode[pil]==7.4.2
-pillow==10.3.0
+# Schémas & validation
+pydantic==2.7.4
+pydantic[email]==2.7.4
 
-# --- Autres utilitaires ---
-python-multipart==0.0.9   # pour upload de fichiers si besoin
-pydantic==2.8.2
-pydantic-settings==2.3.3
+# Gestion des CORS
+starlette==0.37.2
+
+# Utils
+python-multipart==0.0.9
+email-validator==2.1.1
+
+# Localisation / Géolocalisation
+geopy==2.4.1
+requests==2.32.3
+folium==0.16.0   # optionnel, pour visualiser les cartes
+
+# QR Codes
+qrcode==7.4.2
+#pillow==10.2.0
+
+# Tests
+pytest==8.2.2
+httpx==0.27.0
+pytest-asyncio==0.22.0
+pytest-cov==4.1.0

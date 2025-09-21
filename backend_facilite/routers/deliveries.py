@@ -1,24 +1,34 @@
 # backend_facilite/routers/deliveries.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 
-from config import get_db, get_current_user
-from models import Delivery, Order, User, RoleEnum, DeliveryStatusEnum
-from schemas import DeliveryCreate, DeliveryUpdate, DeliveryOut
+from backend_facilite.config import get_db
+from backend_facilite.auth import get_current_user
+from backend_facilite.models import Delivery, Order, User, RoleEnum, DeliveryStatusEnum
+from backend_facilite.schemas import DeliveryCreate, DeliveryUpdate, DeliveryOut
 
 router = APIRouter(prefix="/deliveries", tags=["Deliveries"])
 
-def _require_roles(user: User, roles: list[str]):
-    if str(user.role) not in roles and user.role not in roles:  # robust check
-        # user.role can be RoleEnum or str depending on ORM session
-        if (isinstance(user.role, RoleEnum) and user.role.value not in roles):
-            raise HTTPException(status_code=403, detail="Accès interdit")
-        if (isinstance(user.role, str) and user.role not in roles):
-            raise HTTPException(status_code=403, detail="Accès interdit")
 
 # -----------------------
-# Assignation d'une livraison (admin + restaurant_manager)
+# Helpers
+# -----------------------
+def has_role(user: User, role: str) -> bool:
+    """Vérifie si un utilisateur possède un rôle donné."""
+    if isinstance(user.role, RoleEnum):
+        return user.role.value == role
+    return str(user.role) == role
+
+
+def require_roles(user: User, roles: list[str]):
+    """Bloque l’accès si l’utilisateur n’a pas l’un des rôles requis."""
+    if not any(has_role(user, r) for r in roles):
+        raise HTTPException(status_code=403, detail="Accès interdit")
+
+
+# -----------------------
+# 1. Assignation d'une livraison (admin + restaurant_manager)
 # -----------------------
 @router.post("/", response_model=DeliveryOut)
 def assign_delivery(
@@ -26,24 +36,28 @@ def assign_delivery(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _require_roles(current_user, ["admin", "restaurant_manager"])
+    require_roles(current_user, ["admin", "restaurant_manager"])
 
     order = db.query(Order).filter(Order.id == payload.order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Commande introuvable")
 
-    # Si restaurant_manager, vérifier que la commande appartient à un de ses restos
-    if str(current_user.role) == "restaurant_manager" or current_user.role == RoleEnum.restaurant_manager:
+    # Vérifier que la commande n’est pas annulée ou déjà terminée
+    if getattr(order, "status", None) in ["cancelled", "completed"]:
+        raise HTTPException(status_code=400, detail="Impossible d’assigner une livraison à cette commande")
+
+    # Si restaurant_manager → vérifier que la commande appartient à son resto
+    if has_role(current_user, "restaurant_manager"):
         if order.restaurant.owner_id != current_user.id:
             raise HTTPException(status_code=403, detail="Vous ne pouvez assigner que les commandes de vos restaurants")
 
     delivery_person = db.query(User).filter(User.id == payload.delivery_person_id).first()
     if not delivery_person:
         raise HTTPException(status_code=404, detail="Livreur introuvable")
-    if str(delivery_person.role) != "delivery_person" and delivery_person.role != RoleEnum.delivery_person:
+    if not has_role(delivery_person, "delivery_person"):
         raise HTTPException(status_code=400, detail="L'utilisateur choisi n'a pas le rôle 'delivery_person'")
 
-    # 1 commande → 1 livraison unique
+    # Vérifier qu’il n’existe pas déjà une livraison pour cette commande
     existing = db.query(Delivery).filter(Delivery.order_id == order.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Une livraison est déjà assignée à cette commande")
@@ -60,22 +74,23 @@ def assign_delivery(
     db.refresh(d)
     return d
 
+
 # -----------------------
-# Le livreur voit ses livraisons
+# 2. Le livreur voit ses livraisons
 # -----------------------
 @router.get("/me", response_model=List[DeliveryOut])
 def my_deliveries(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _require_roles(current_user, ["delivery_person", "admin"])
-    if str(current_user.role) == "admin" or current_user.role == RoleEnum.admin:
-        # admin peut tout voir
+    require_roles(current_user, ["delivery_person", "admin"])
+    if has_role(current_user, "admin"):
         return db.query(Delivery).all()
     return db.query(Delivery).filter(Delivery.delivery_person_id == current_user.id).all()
 
+
 # -----------------------
-# Suivi d’une commande (client ou admin/manager)
+# 3. Suivi d’une commande (client ou admin/manager)
 # -----------------------
 @router.get("/order/{order_id}", response_model=DeliveryOut)
 def get_by_order(
@@ -87,22 +102,22 @@ def get_by_order(
     if not d:
         raise HTTPException(status_code=404, detail="Livraison introuvable pour cette commande")
 
-    # Autorisations simples :
-    # - admin
-    # - restaurant_manager du resto concerné
-    # - client qui a passé la commande
     order = db.query(Order).filter(Order.id == order_id).first()
-    is_admin = (str(current_user.role) == "admin" or current_user.role == RoleEnum.admin)
-    is_restomanager = (str(current_user.role) == "restaurant_manager" or current_user.role == RoleEnum.restaurant_manager)
-    is_client = (order and order.user_id == current_user.id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Commande introuvable")
+
+    is_admin = has_role(current_user, "admin")
+    is_restomanager = has_role(current_user, "restaurant_manager")
+    is_client = (order.user_id == current_user.id)
 
     if not (is_admin or is_client or (is_restomanager and order.restaurant.owner_id == current_user.id)):
         raise HTTPException(status_code=403, detail="Accès interdit")
 
     return d
 
+
 # -----------------------
-# Mise à jour (livreur ou admin)
+# 4. Mise à jour (livreur ou admin)
 # -----------------------
 @router.patch("/{delivery_id}", response_model=DeliveryOut)
 def update_delivery(
@@ -115,7 +130,7 @@ def update_delivery(
     if not d:
         raise HTTPException(status_code=404, detail="Livraison introuvable")
 
-    is_admin = (str(current_user.role) == "admin" or current_user.role == RoleEnum.admin)
+    is_admin = has_role(current_user, "admin")
     is_owner = (d.delivery_person_id == current_user.id)
 
     if not (is_admin or is_owner):
@@ -132,8 +147,9 @@ def update_delivery(
     db.refresh(d)
     return d
 
+
 # -----------------------
-# Détail d’une livraison (admin, livreur, client de la commande)
+# 5. Détail d’une livraison (admin, livreur, client de la commande)
 # -----------------------
 @router.get("/{delivery_id}", response_model=DeliveryOut)
 def get_delivery(
@@ -146,8 +162,8 @@ def get_delivery(
         raise HTTPException(status_code=404, detail="Livraison introuvable")
 
     order = db.query(Order).filter(Order.id == d.order_id).first()
-    is_admin = (str(current_user.role) == "admin" or current_user.role == RoleEnum.admin)
-    is_restomanager = (str(current_user.role) == "restaurant_manager" or current_user.role == RoleEnum.restaurant_manager)
+    is_admin = has_role(current_user, "admin")
+    is_restomanager = has_role(current_user, "restaurant_manager")
     is_delivery = (d.delivery_person_id == current_user.id)
     is_client = (order and order.user_id == current_user.id)
 
@@ -155,3 +171,21 @@ def get_delivery(
         raise HTTPException(status_code=403, detail="Accès interdit")
 
     return d
+
+
+# -----------------------
+# 6. Suppression d’une livraison (admin uniquement)
+# -----------------------
+@router.delete("/{delivery_id}", status_code=204)
+def delete_delivery(
+    delivery_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_roles(current_user, ["admin"])
+    d = db.query(Delivery).filter(Delivery.id == delivery_id).first()
+    if not d:
+        raise HTTPException(status_code=404, detail="Livraison introuvable")
+    db.delete(d)
+    db.commit()
+    return

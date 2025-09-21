@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from config import get_db, get_current_user
-from models import Payment, Order, Reservation, User
-from schemas import PaymentCreate, PaymentOut
+from backend_facilite.config import get_db
+from backend_facilite.auth import get_current_user
+
+from backend_facilite.models import Payment, Order, Reservation, User
+from backend_facilite.schemas import PaymentCreate, PaymentOut
 from typing import List
 from datetime import datetime
 from sqlalchemy import func
 import os
 
-from utils.qrcode_utils import ensure_tx_code, generate_qr_png
+from backend_facilite.utils.qrcode_utils import ensure_tx_code, generate_qr_png
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 

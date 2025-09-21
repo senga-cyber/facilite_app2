@@ -1,5 +1,5 @@
 // frontend_web/src/pages/dashboardRestaurant.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../api/client";
 import Sidebar from "../components/Sidebar";
 
@@ -9,7 +9,8 @@ export default function DashboardRestaurant() {
   const [price, setPrice] = useState("");
   const [menus, setMenus] = useState([]);
 
-  const fetchMenus = async () => {
+  // ✅ fetchMenus est maintenant stable grâce à useCallback
+  const fetchMenus = useCallback(async () => {
     if (!restaurantId) return;
     try {
       const res = await api.get(`/restaurants/${restaurantId}/menus`);
@@ -17,11 +18,12 @@ export default function DashboardRestaurant() {
     } catch (err) {
       console.error("Erreur chargement menus", err);
     }
-  };
+  }, [restaurantId]);
 
+  // ✅ useEffect écoute fetchMenus et ne génère plus de warning
   useEffect(() => {
     fetchMenus();
-  }, [restaurantId]);
+  }, [fetchMenus]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function DashboardRestaurant() {
       alert("Plat ajouté !");
       setName("");
       setPrice("");
-      fetchMenus();
+      fetchMenus(); // ✅ on peut le rappeler directement
     } catch (err) {
       alert(err?.response?.data?.detail || "Erreur");
     }

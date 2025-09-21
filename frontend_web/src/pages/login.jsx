@@ -28,6 +28,8 @@ export default function Login() {
         res = await api.post("/auth/login/client", { phone_number: phone });
       }
 
+      console.log("Login response:", res.data); // 👈 debug
+
       const { access_token, role, user } = res.data;
       login({
         token: access_token,
@@ -41,6 +43,7 @@ export default function Login() {
       else if (r === "restaurant_manager") navigate("/dashboard/restaurant");
       else navigate("/dashboard/client");
     } catch (err) {
+      console.error("Login error:", err?.response?.data || err.message);
       setMessage(err?.response?.data?.detail || "❌ Erreur de connexion");
     } finally {
       setLoading(false);
@@ -53,22 +56,17 @@ export default function Login() {
         
         {/* Logo + Titre */}
         <div className="flex flex-col items-center mb-6">
-          <img
-            src={logo}
-            alt="Logo"
-            className="logo"
-          />
+          <img src={logo} alt="Logo" className="logo" />
           <h1 className="text-2xl font-extrabold text-slate-900">FACILITE</h1>
           <p className="text-gray-500 text-sm">Connexion à votre compte</p>
         </div>
 
         {/* Formulaire */}
         <form onSubmit={submit} className="space-y-5">
-          <div className="flex justfiy-center flex-col">
+          <div className="flex flex-col">
             <label className="block text-sm text-gray-700 mb-1">
               Numéro de téléphone
             </label>
-            
             <input
               className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
               value={phone}
@@ -105,10 +103,7 @@ export default function Login() {
               />
               <span>Je suis manager / admin</span>
             </label>
-            <a
-              href="/register"
-              className="text-sky-500 hover:underline font-medium"
-            >
+            <a href="/register" className="text-sky-500 hover:underline font-medium">
               Créer un compte
             </a>
           </div>
@@ -126,7 +121,7 @@ export default function Login() {
         {/* Message */}
         {message && (
           <p className="mt-4 text-center text-sm font-medium text-red-500">
-            {message}
+            {typeof message === "string" ? message : JSON.stringify(message)}
           </p>
         )}
       </div>

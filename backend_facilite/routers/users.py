@@ -1,11 +1,12 @@
 # routers/users.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from config import get_db
-from models import User
-from schemas import UserCreate, UserReponse
+from backend_facilite.config import get_db
+from backend_facilite.models import User
+from backend_facilite.schemas import UserCreate, UserReponse
 from typing import List
-from auth import hash_password
+from backend_facilite.auth import hash_password
+
 
 router = APIRouter(tags=["Users"])  # <-- pas besoin de prefix ici, car déjà défini dans main.py
 

@@ -1,8 +1,9 @@
 # backend_facilite/models.py
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, text
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+from backend_facilite.database import Base
+from sqlalchemy import Enum as SQLEnum
 import enum
 
 # -----------------------
@@ -12,7 +13,7 @@ class RoleEnum(str, enum.Enum):
     client = "client"
     restaurant_manager = "restaurant_manager"
     hotel_manager = "hotel_manager"
-    delivery_person = "delivery_person"  # ✅ nouveau rôle livreur
+    delivery_person = "delivery_person"
     admin = "admin"
 
 class DeliveryStatusEnum(str, enum.Enum):
@@ -21,6 +22,7 @@ class DeliveryStatusEnum(str, enum.Enum):
     in_progress = "in_progress"
     delivered = "delivered"
     cancelled = "cancelled"
+
 
 # -----------------------
 # UTILISATEURS
@@ -32,7 +34,11 @@ class User(Base):
     name = Column(String, nullable=False)
     phone_number = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=True)  # sécurisé
-    role = Column(Enum(RoleEnum), default=RoleEnum.client, nullable=False)
+    role = Column(
+        SQLEnum(RoleEnum, name="roleenum"),
+        default=RoleEnum.client,
+        nullable=False
+    )
     email = Column(String, unique=True, nullable=True)
     is_active = Column(Boolean, default=True)
     is_staff = Column(Boolean, default=False)
@@ -44,10 +50,11 @@ class User(Base):
     orders = relationship("Order", back_populates="user")
     reservations = relationship("Reservation", back_populates="user")
     payments = relationship("Payment", back_populates="user")
-    deliveries = relationship("Delivery", back_populates="delivery_person")  # ✅ livraisons assignées
+    deliveries = relationship("Delivery", back_populates="delivery_person")
 
     def __repr__(self):
         return f"<User(id={self.id}, name={self.name}, role={self.role})>"
+
 
 # -----------------------
 # RESTAURANTS
@@ -69,6 +76,7 @@ class Restaurant(Base):
     def __repr__(self):
         return f"<Restaurant(id={self.id}, name={self.name})>"
 
+
 # -----------------------
 # MENUS
 # -----------------------
@@ -78,16 +86,17 @@ class Menu(Base):
     id = Column(Integer, primary_key=True, index=True)
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
     name = Column(String, nullable=False)
-    description = Column(String, nullable=True)  # description du plat
-    category = Column(String, nullable=True)     # entrée, plat, dessert
+    description = Column(String, nullable=True)
+    category = Column(String, nullable=True)
     price = Column(Float, nullable=False)
-    image_url = Column(String, nullable=True)    # photo du plat
+    image_url = Column(String, nullable=True)
 
     restaurant = relationship("Restaurant", back_populates="menus")
     order_items = relationship("OrderItem", back_populates="menu")
 
     def __repr__(self):
         return f"<Menu(id={self.id}, name={self.name}, price={self.price})>"
+
 
 # -----------------------
 # HOTELS
@@ -100,7 +109,6 @@ class Hotel(Base):
     name = Column(String, nullable=False)
     address = Column(String, nullable=False)
     city = Column(String, nullable=False)
-    price_per_night = Column(Float, nullable=False)
 
     owner = relationship("User", back_populates="hotels")
     reservations = relationship("Reservation", back_populates="hotel")
@@ -108,6 +116,7 @@ class Hotel(Base):
 
     def __repr__(self):
         return f"<Hotel(id={self.id}, name={self.name}, city={self.city})>"
+
 
 # -----------------------
 # ROOMS
@@ -122,6 +131,7 @@ class Room(Base):
     price_per_night = Column(Float, nullable=False)
 
     hotel = relationship("Hotel", back_populates="rooms")
+
 
 # -----------------------
 # RESERVATIONS
@@ -141,6 +151,7 @@ class Reservation(Base):
     user = relationship("User", back_populates="reservations")
     hotel = relationship("Hotel", back_populates="reservations")
 
+
 # -----------------------
 # COMMANDES
 # -----------------------
@@ -158,7 +169,8 @@ class Order(Base):
     items = relationship("OrderItem", back_populates="order")
     user = relationship("User", back_populates="orders")
     restaurant = relationship("Restaurant", back_populates="orders")
-    delivery = relationship("Delivery", back_populates="order", uselist=False)  # ✅ 1 delivery / order
+    delivery = relationship("Delivery", back_populates="order", uselist=False)
+
 
 # -----------------------
 # PAIEMENTS
@@ -172,7 +184,6 @@ class Payment(Base):
     reservation_id = Column(Integer, ForeignKey("reservations.id"), nullable=True)
     amount = Column(Float, nullable=False)
 
-    # commissions: 2$ app + frais passerelle (selon méthode)
     net_amount = Column(Float, nullable=False)
     commission = Column(Float, default=1.0)
 
@@ -180,7 +191,6 @@ class Payment(Base):
     status = Column(String, default="pending")
     transaction_code = Column(String, unique=True, index=True, nullable=True)
 
-    # QR
     is_used = Column(Boolean, default=False, nullable=False)
     qr_path = Column(String, nullable=True)
     discount = Column(Float, default=0.0)
@@ -191,6 +201,7 @@ class Payment(Base):
     order = relationship("Order")
     reservation = relationship("Reservation")
 
+
 # -----------------------
 # LIVRAISONS
 # -----------------------
@@ -198,17 +209,20 @@ class Delivery(Base):
     __tablename__ = "deliveries"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
-    delivery_person_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    status = Column(Enum(DeliveryStatusEnum), default=DeliveryStatusEnum.pending, nullable=False)
-
-    latitude = Column(Float, nullable=True)   # position actuelle du livreur
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    delivery_person_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(
+        SQLEnum(DeliveryStatusEnum, name="deliverystatusenum"),
+        default=DeliveryStatusEnum.pending,
+        nullable=False
+    )
+    latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=text("NOW()"))
 
-    # relations
     order = relationship("Order", back_populates="delivery")
     delivery_person = relationship("User", back_populates="deliveries")
+
 
 # -----------------------
 # ORDER ITEMS

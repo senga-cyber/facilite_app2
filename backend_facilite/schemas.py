@@ -11,7 +11,16 @@ class RoleEnum(str, Enum):
     client = "client"
     restaurant_manager = "restaurant_manager"
     hotel_manager = "hotel_manager"
+    delivery_person = "delivery_person"
     admin = "admin"
+
+
+class DeliveryStatusEnum(str, Enum):
+    pending = "pending"
+    accepted = "accepted"
+    in_progress = "in_progress"
+    delivered = "delivered"
+    cancelled = "cancelled"
 
 
 # -----------------------
@@ -19,12 +28,13 @@ class RoleEnum(str, Enum):
 # -----------------------
 class UserBase(BaseModel):
     name: str
-    phone_number: str  # ✅ requis pour la route de login
-    role: RoleEnum = RoleEnum.client  # Par défaut, le rôle est "client"
+    phone_number: str
+    role: RoleEnum = RoleEnum.client
 
 
 class UserCreate(UserBase):
     password: str
+
 
 class UserReponse(UserBase):
     id: int
@@ -39,19 +49,26 @@ class UserReponse(UserBase):
 # AUTH / LOGIN
 # -----------------------
 class ClientLogin(BaseModel):
-    phone: str
-# -----------------------
-# MANAGERS  (ADMIN ONLY)
-# -----------------------
+    phone_number: str
+
+
 class ManagerCreate(UserBase):
+    """
+    Création d'un manager par l'admin, et liaison directe à un établissement.
+    - Si role = restaurant_manager => restaurant_id requis
+    - Si role = hotel_manager      => hotel_id requis
+    """
     username: str
-    phone_number: str 
     email: EmailStr
     password: str
     role: RoleEnum
 
+    restaurant_id: Optional[int] = None
+    hotel_id: Optional[int] = None
+
+
 class ManagerLogin(BaseModel):
-    phone: str
+    phone_number: str
     password: str
 
 
@@ -60,21 +77,22 @@ class ManagerLogin(BaseModel):
 # -----------------------
 class RestaurantBase(BaseModel):
     name: str
-    adress: str
+    address: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     description: Optional[str] = None
 
+
 class RestaurantCreate(RestaurantBase):
     manager_id: int
+
 
 class RestaurantResponse(RestaurantBase):
     id: int
     owner_id: int
 
     class Config:
-       from_attributes = True
-
+        from_attributes = True
 
 
 # -----------------------
@@ -85,8 +103,10 @@ class MenuBase(BaseModel):
     description: Optional[str] = None
     price: float
 
+
 class MenuCreate(MenuBase):
     pass
+
 
 class MenuResponse(MenuBase):
     id: int
@@ -96,7 +116,6 @@ class MenuResponse(MenuBase):
         from_attributes = True
 
 
-
 # -----------------------
 # COMMANDES
 # -----------------------
@@ -104,8 +123,10 @@ class OrderItemBase(BaseModel):
     menu_id: int
     quantity: int
 
+
 class OrderItemCreate(OrderItemBase):
     pass
+
 
 class OrderItemResponse(OrderItemBase):
     id: int
@@ -114,14 +135,17 @@ class OrderItemResponse(OrderItemBase):
     class Config:
         from_attributes = True
 
+
 class OrderBase(BaseModel):
     restaurant_id: int
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     items: List[OrderItemCreate]
 
+
 class OrderCreate(OrderBase):
     pass
+
 
 class OrderResponse(BaseModel):
     id: int
@@ -139,16 +163,12 @@ class OrderResponse(BaseModel):
 # -----------------------
 # PAIEMENTS
 # -----------------------
-# -----------------------
-# PAIEMENTS
-# -----------------------
-
-
 class PaymentCreate(BaseModel):
     order_id: Optional[int] = None
     reservation_id: Optional[int] = None
     amount: float
     payment_method: str
+    discount: Optional[float] = 0.0
 
 
 class PaymentOut(BaseModel):
@@ -163,7 +183,7 @@ class PaymentOut(BaseModel):
     status: str
     transaction_code: Optional[str]
     created_at: datetime
-    qr_url: Optional[str] = None   # ✅ nouveau champ pour exposer l’URL publique du QR code
+    qr_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -179,15 +199,18 @@ class HotelBase(BaseModel):
     longitude: Optional[float] = None
     description: Optional[str] = None
 
+
 class HotelCreate(HotelBase):
     manager_id: int
 
+
 class HotelUpdate(BaseModel):
     name: Optional[str] = None
-    location: Optional[str] = None
+    address: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     description: Optional[str] = None
+
 
 class HotelResponse(HotelBase):
     id: int
@@ -197,18 +220,18 @@ class HotelResponse(HotelBase):
         from_attributes = True
 
 
-
 # -----------------------
 # ROOMS
 # -----------------------
 class RoomBase(BaseModel):
     room_number: str
-    type: int
+    capacity: int
     price_per_night: float
-    is_available: bool=True
+
 
 class RoomCreate(RoomBase):
     hotel_id: int
+
 
 class RoomReponse(RoomBase):
     id: int
@@ -228,10 +251,41 @@ class ReservationCreate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
+
 class ReservationOut(ReservationCreate):
     id: int
     user_id: int
     total_price: float
+
+    class Config:
+        from_attributes = True
+
+
+# -----------------------
+# LIVRAISONS
+# -----------------------
+class DeliveryCreate(BaseModel):
+    order_id: int
+    delivery_person_id: int
+    status: Optional[DeliveryStatusEnum] = DeliveryStatusEnum.pending
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class DeliveryUpdate(BaseModel):
+    status: Optional[DeliveryStatusEnum] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class DeliveryOut(BaseModel):
+    id: int
+    order_id: int
+    delivery_person_id: int
+    status: DeliveryStatusEnum
+    latitude: Optional[float]
+    longitude: Optional[float]
+    created_at: datetime
 
     class Config:
         from_attributes = True
